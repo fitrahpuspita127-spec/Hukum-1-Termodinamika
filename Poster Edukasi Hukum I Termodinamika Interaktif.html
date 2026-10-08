@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poster Interaktif Hukum I Termodinamika</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .handwritten {
+            font-family: 'Caveat', cursive;
+        }
+        .font-math {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .poster-card {
+            background: #1e293b;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .poster-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+        canvas {
+            background-color: #090d16;
+            border-radius: 12px;
+        }
+        @media print {
+            body { background: white; color: #0f172a; padding: 0; }
+            .no-print { display: none !important; }
+            .poster-container { box-shadow: none; border: none; width: 100%; max-width: 100%; background: #ffffff; color: #0f172a; }
+            .poster-card { background: #f8fafc; border: 2px solid #cbd5e1; color: #0f172a; }
+            canvas { background-color: #f1f5f9; border: 1px solid #94a3b8; }
+            .text-print-dark { color: #0f172a !important; }
+        }
+    </style>
+</head>
+<body class="p-3 md:p-6 flex flex-col items-center min-h-screen">
+
+    <!-- Control Bar -->
+    <div class="no-print mb-6 flex flex-wrap justify-center gap-4">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2.5 rounded-full shadow-lg transition flex items-center gap-2 text-sm md:text-base">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 002-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+            Cetak / Simpan PDF (A3/A4)
+        </button>
+        <button id="toggleAnimBtn" onclick="toggleAnimations()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2.5 rounded-full shadow-lg transition flex items-center gap-2 text-sm md:text-base">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="animBtnText">Jeda Animasi Partikel</span>
+        </button>
+    </div>
+
+    <!-- MAIN POSTER CONTAINER -->
+    <div class="poster-container w-full max-w-[960px] bg-slate-900 border-4 border-slate-700 rounded-3xl p-5 md:p-8 shadow-2xl relative">
+
+        <!-- HEADER -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-5xl font-black tracking-tight text-white mb-2">
+                Dinamika Transfer Energi
+            </h1>
+            <h2 class="text-lg md:text-2xl font-bold text-sky-400 mb-3">
+                Membedah Hukum I Termodinamika & Aplikasinya
+            </h2>
+            <div class="inline-block bg-amber-400/20 border-2 border-amber-400 px-6 py-1.5 rounded-full">
+                <p class="handwritten text-xl md:text-2xl font-bold text-amber-300">
+                    "Energi Tidak Pernah Hilang, Ia Hanya Berganti Wujud"
+                </p>
+            </div>
+        </header>
+
+        <!-- HEADER DIAGRAM: PISTON CYLINDER DYNAMIC MODEL -->
+        <div class="bg-slate-800/80 border-2 border-slate-700 rounded-2xl p-4 md:p-6 mb-8 shadow-inner flex flex-col md:flex-row items-center gap-6">
+            <div class="w-full md:w-5/12 flex flex-col items-center">
+                <div class="text-xs font-semibold text-sky-300 mb-2 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    Simulasi Real-time: Transfer Kalor & Kerja
+                </div>
+                <!-- Interactive Main Piston Canvas -->
+                <canvas id="mainPistonCanvas" width="280" height="220" class="w-full max-w-[280px] h-[220px]"></canvas>
+            </div>
+            
+            <div class="w-full md:w-7/12 space-y-4">
+                <div class="bg-amber-950/40 border-l-4 border-amber-400 p-4 rounded-r-xl">
+                    <p class="text-xs md:text-sm leading-relaxed text-amber-100">
+                        <strong class="text-amber-300">Prinsip Utama:</strong> Perubahan energi dalam (<span class="font-math font-bold">ΔU</span>) sistem gas bergantung pada jumlah energi dalam bentuk kalor (<span class="font-math font-bold">Q</span>) yang diserap/dilepas serta kerja mekanik (<span class="font-math font-bold">W</span>) yang dilakukan oleh atau pada piston.
+                    </p>
+                </div>
+                
+                <div class="bg-sky-950/50 p-4 rounded-xl border border-sky-800 text-center md:text-left">
+                    <p class="text-xs uppercase tracking-wider text-sky-400 font-bold mb-1">Formulasi Matematika Utama</p>
+                    <div class="text-3xl font-black font-math text-sky-200 tracking-wide">
+                        ΔU = Q - W
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">
+                        * <span class="text-emerald-400 font-semibold">W &gt; 0</span> (gas melakukan ekspansi), <span class="text-rose-400 font-semibold">Q &gt; 0</span> (kalor masuk ke sistem gas).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GRID 4 KUADRAN PROSES TERMODINAMIKA -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+            <!-- 1. PROSES ISOTERMAL -->
+            <div class="poster-card border-2 border-rose-500/40 p-5 flex flex-col justify-between">
+                <div>
+                    <div class="bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold px-3 py-1 rounded-full text-xs inline-block mb-3">
+                        1. Proses Isotermal (T = konstan)
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <!-- Grafik P-V -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-slate-400 mb-1">Kurva P-V (Hiperbola)</p>
+                            <svg viewBox="0 0 100 80" class="w-full h-24">
+                                <line x1="15" y1="10" x2="15" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="15" y1="70" x2="95" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <path d="M 22 18 Q 32 52 88 64" stroke="#f43f5e" stroke-width="3" fill="none"/>
+                                <text x="8" y="15" font-size="9" fill="#cbd5e1" font-weight="bold">P</text>
+                                <text x="90" y="78" font-size="9" fill="#cbd5e1" font-weight="bold">V</text>
+                            </svg>
+                        </div>
+                        <!-- Canvas Molekul Gerak -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-amber-400 mb-1">Gerak Molekul (Kecepatan Tetap)</p>
+                            <canvas id="isothermalCanvas" width="100" height="96" class="w-full h-24"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-300 mb-3 leading-tight">
+                        Suhu sistem dijaga konstan. Karena suhu tidak berubah, energi dalam sistem tetap konstan (<span class="font-math font-bold">ΔU = 0</span>).
+                    </p>
+                    <div class="bg-rose-950/40 p-3 rounded-xl border border-rose-800/60 text-center font-math">
+                        <p class="text-base font-bold text-rose-200">Q = W = nRT ln(V₂ / V₁)</p>
+                        <p class="text-xs font-semibold text-rose-400 mt-1">ΔU = 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. PROSES ISOBARIK -->
+            <div class="poster-card border-2 border-sky-500/40 p-5 flex flex-col justify-between">
+                <div>
+                    <div class="bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold px-3 py-1 rounded-full text-xs inline-block mb-3">
+                        2. Proses Isobarik (P = konstan)
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <!-- Grafik P-V -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-slate-400 mb-1">Kurva P-V (Garis Horizontal)</p>
+                            <svg viewBox="0 0 100 80" class="w-full h-24">
+                                <line x1="15" y1="10" x2="15" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="15" y1="70" x2="95" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="20" y1="38" x2="88" y2="38" stroke="#38bdf8" stroke-width="3"/>
+                                <text x="8" y="15" font-size="9" fill="#cbd5e1" font-weight="bold">P</text>
+                                <text x="90" y="78" font-size="9" fill="#cbd5e1" font-weight="bold">V</text>
+                            </svg>
+                        </div>
+                        <!-- Canvas Molekul Gerak -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-sky-400 mb-1">Piston Naik (Volume Bertambah)</p>
+                            <canvas id="isobaricCanvas" width="100" height="96" class="w-full h-24"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-300 mb-3 leading-tight">
+                        Tekanan dijaga konstan. Saat kalor masuk, gas memuai mendorong piston naik sehingga melakukan kerja (<span class="font-math font-bold">W = P·ΔV</span>).
+                    </p>
+                    <div class="bg-sky-950/40 p-3 rounded-xl border border-sky-800/60 text-center font-math">
+                        <p class="text-base font-bold text-sky-200">W = P × ΔV</p>
+                        <p class="text-xs font-semibold text-sky-400 mt-1">Qₚ = ΔH = n Cₚ ΔT</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. PROSES ISOKHORIK -->
+            <div class="poster-card border-2 border-emerald-500/40 p-5 flex flex-col justify-between">
+                <div>
+                    <div class="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold px-3 py-1 rounded-full text-xs inline-block mb-3">
+                        3. Proses Isokhorik (V = konstan)
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <!-- Grafik P-V -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-slate-400 mb-1">Kurva P-V (Garis Vertikal)</p>
+                            <svg viewBox="0 0 100 80" class="w-full h-24">
+                                <line x1="15" y1="10" x2="15" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="15" y1="70" x2="95" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="52" y1="18" x2="52" y2="65" stroke="#10b981" stroke-width="3"/>
+                                <text x="8" y="15" font-size="9" fill="#cbd5e1" font-weight="bold">P</text>
+                                <text x="90" y="78" font-size="9" fill="#cbd5e1" font-weight="bold">V</text>
+                            </svg>
+                        </div>
+                        <!-- Canvas Molekul Gerak -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-emerald-400 mb-1">Piston Dikunci (Partikel Panas)</p>
+                            <canvas id="isochoricCanvas" width="100" height="96" class="w-full h-24"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-300 mb-3 leading-tight">
+                        Volume sistem terkunci (<span class="font-math font-bold">W = 0</span>). Seluruh kalor yang diserap langsung diubah menjadi energi dalam (<span class="font-math font-bold">ΔU = Q</span>).
+                    </p>
+                    <div class="bg-emerald-950/40 p-3 rounded-xl border border-emerald-800/60 text-center font-math">
+                        <p class="text-base font-bold text-emerald-200">W = 0</p>
+                        <p class="text-xs font-semibold text-emerald-400 mt-1">ΔU = Qᵥ = n Cᵥ ΔT</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. PROSES ADIABATIK -->
+            <div class="poster-card border-2 border-purple-500/40 p-5 flex flex-col justify-between">
+                <div>
+                    <div class="bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold px-3 py-1 rounded-full text-xs inline-block mb-3">
+                        4. Proses Adiabatik (Q = 0)
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <!-- Grafik P-V -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-slate-400 mb-1">Kurva Curam (Q = 0)</p>
+                            <svg viewBox="0 0 100 80" class="w-full h-24">
+                                <line x1="15" y1="10" x2="15" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <line x1="15" y1="70" x2="95" y2="70" stroke="#64748b" stroke-width="2"/>
+                                <path d="M 22 15 C 28 55 55 62 88 66" stroke="#c084fc" stroke-width="3" fill="none"/>
+                                <text x="8" y="15" font-size="9" fill="#cbd5e1" font-weight="bold">P</text>
+                                <text x="90" y="78" font-size="9" fill="#cbd5e1" font-weight="bold">V</text>
+                            </svg>
+                        </div>
+                        <!-- Canvas Molekul Gerak -->
+                        <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-700 text-center">
+                            <p class="text-[10px] font-bold text-purple-400 mb-1">Mendingin Saat Berekspansi</p>
+                            <canvas id="adiabaticCanvas" width="100" height="96" class="w-full h-24"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-xs text-slate-300 mb-3 leading-tight">
+                        Tidak ada kalor masuk/keluar sistem (<span class="font-math font-bold">Q = 0</span>). Kerja ekspansi mengambil energi dari energi dalam gas (<span class="font-math font-bold">ΔU = -W</span>).
+                    </p>
+                    <div class="bg-purple-950/40 p-3 rounded-xl border border-purple-800/60 text-center font-math">
+                        <p class="text-base font-bold text-purple-200">P₁ (V₁)ⁿ = P₂ (V₂)ⁿ</p>
+                        <p class="text-xs font-semibold text-purple-400 mt-1">ΔU = -W</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- FOOTER: KESIMPULAN & ASUMSI SISTEM -->
+        <footer class="bg-slate-950/90 rounded-2xl p-5 border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            
+            <!-- Kolom 1: Intinya -->
+            <div class="space-y-1.5">
+                <p class="text-amber-400 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    💡 Intinya...
+                </p>
+                <h3 class="font-bold text-base text-white">Hukum I Termodinamika</h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Setiap kalor (<span class="font-math">Q</span>) yang diserap sistem digunakan untuk melakukan kerja mekanik (<span class="font-math">W</span>) dan/atau mengubah energi dalam (<span class="font-math font-bold">ΔU</span>) sistem.
+                </p>
+            </div>
+
+            <!-- Kolom 2: Asumsi Sistem (Gas Ideal) -->
+            <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1.5">
+                <p class="text-sky-400 font-bold text-xs uppercase tracking-wider">⚙️ Asumsi Sistem (Gas Ideal)</p>
+                <p class="text-[11px] text-slate-300 leading-snug">
+                    Model gas ideal digunakan sebagai <span class="text-white font-semibold">zat kerja (working fluid)</span> simulasi:
+                </p>
+                <ul class="text-[10px] text-slate-400 list-disc list-inside space-y-0.5">
+                    <li>Molekul berupa titik bermassa tanpa tarik-menarik</li>
+                    <li>Tumbukan antarmolekul bersifat elastis sempurna</li>
+                    <li>Energi dalam (<span class="font-math">U</span>) hanya bergantung pada Suhu (<span class="font-math">T</span>)</li>
+                </ul>
+            </div>
+
+            <!-- Kolom 3: Pesan Penutup -->
+            <div class="text-center md:text-right">
+                <div class="bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 p-3.5 rounded-xl font-bold text-xs shadow-md leading-relaxed">
+                    "Dalam setiap gerakan kinetik molekul, tersimpan cerita tentang transformasi dan kekekalan energi di alam semesta!"
+                </div>
+            </div>
+
+        </footer>
+
+    </div>
+
+    <script>
+        // Global animation running status
+        let isAnimating = true;
+
+        // Utility: Random float
+        function rand(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Particle Class
+        class Particle {
+            constructor(x, y, radius, color, speedScale = 1) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * rand(1, 2) * speedScale;
+                this.vy = Math.sin(angle) * rand(1, 2) * speedScale;
+            }
+
+            update(minX, maxX, minY, maxY, speedMultiplier = 1) {
+                this.x += this.vx * speedMultiplier;
+                this.y += this.vy * speedMultiplier;
+
+                // Wall bounces
+                if (this.x - this.radius < minX) {
+                    this.x = minX + this.radius;
+                    this.vx *= -1;
+                }
+                if (this.x + this.radius > maxX) {
+                    this.x = maxX - this.radius;
+                    this.vx *= -1;
+                }
+                if (this.y - this.radius < minY) {
+                    this.y = minY + this.radius;
+                    this.vy *= -1;
+                }
+                if (this.y + this.radius > maxY) {
+                    this.y = maxY - this.radius;
+                    this.vy *= -1;
+                }
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = this.color;
+                ctx.closePath();
+                ctx.shadowBlur = 0; // reset
+            }
+        }
+
+        // --- 1. MAIN HEADER PISTON SIMULATION ---
+        const mainCanvas = document.getElementById('mainPistonCanvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        let mainTime = 0;
+        const mainParticles = [];
+        for(let i=0; i<30; i++) {
+            mainParticles.push(new Particle(rand(50, 230), rand(80, 180), 4, '#38bdf8', 1.2));
+        }
+
+        function renderMainPiston() {
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            mainTime += 0.03;
+            
+            // Piston motion cycle (oscillation)
+            const pistonY = 60 + Math.sin(mainTime) * 20;
+
+            // Cylinder Outer Walls
+            mainCtx.lineWidth = 4;
+            mainCtx.strokeStyle = '#64748b';
+            mainCtx.strokeRect(30, 30, 220, 170);
+
+            // Cylinder Gas Volume Area
+            mainCtx.fillStyle = 'rgba(14, 165, 233, 0.15)';
+            mainCtx.fillRect(32, pistonY + 12, 216, 198 - pistonY);
+
+            // Piston Rod & Cap
+            mainCtx.fillStyle = '#94a3b8';
+            mainCtx.fillRect(130, 10, 20, pistonY); // Rod
+            mainCtx.fillStyle = '#cbd5e1';
+            mainCtx.fillRect(32, pistonY, 216, 12); // Piston head
+
+            // Draw & Update Particles inside gas space
+            mainParticles.forEach(p => {
+                p.update(36, 244, pistonY + 16, 194, 1);
+                p.draw(mainCtx);
+            });
+
+            // Heat In / Out Arrows
+            mainCtx.fillStyle = '#f43f5e';
+            mainCtx.font = 'bold 11px sans-serif';
+            mainCtx.fillText('Q (Kalor)', 5, 140);
+            
+            mainCtx.fillStyle = '#10b981';
+            mainCtx.fillText('W (Kerja)', 200, 45);
+        }
+
+        // --- 2. ISOTHERMAL SIMULATION (T = Const, Speed = Const) ---
+        const isoCanvas = document.getElementById('isothermalCanvas');
+        const isoCtx = isoCanvas.getContext('2d');
+        const isoParticles = [];
+        for(let i=0; i<15; i++) {
+            isoParticles.push(new Particle(rand(10, 90), rand(30, 80), 3.5, '#fbbf24', 1.0));
+        }
+        let isoTime = 0;
+
+        function renderIsothermal() {
+            isoCtx.clearRect(0, 0, isoCanvas.width, isoCanvas.height);
+            isoTime += 0.02;
+            const pistonY = 20 + Math.sin(isoTime) * 10; // slow gentle expansion
+
+            // Cylinder
+            isoCtx.strokeStyle = '#475569';
+            isoCtx.strokeRect(5, 10, 90, 80);
+            
+            // Piston head
+            isoCtx.fillStyle = '#94a3b8';
+            isoCtx.fillRect(6, pistonY, 88, 6);
+
+            // Particles
+            isoParticles.forEach(p => {
+                p.update(10, 90, pistonY + 8, 86, 1);
+                p.draw(isoCtx);
+            });
+        }
+
+        // --- 3. ISOBARIC SIMULATION (P = Const, Volume Increases) ---
+        const isobaricCanvas = document.getElementById('isobaricCanvas');
+        const isobaricCtx = isobaricCanvas.getContext('2d');
+        const isobaricParticles = [];
+        for(let i=0; i<15; i++) {
+            isobaricParticles.push(new Particle(rand(10, 90), rand(40, 80), 3.5, '#38bdf8', 1.2));
+        }
+        let isobaricTime = 0;
+
+        function renderIsobaric() {
+            isobaricCtx.clearRect(0, 0, isobaricCanvas.width, isobaricCanvas.height);
+            isobaricTime += 0.025;
+            // Piston moves UP from low to high
+            const pistonY = 45 - Math.sin(isobaricTime) * 20;
+
+            // Cylinder
+            isobaricCtx.strokeStyle = '#475569';
+            isobaricCtx.strokeRect(5, 10, 90, 80);
+            
+            // Piston head
+            isobaricCtx.fillStyle = '#94a3b8';
+            isobaricCtx.fillRect(6, pistonY, 88, 6);
+
+            // Particles
+            isobaricParticles.forEach(p => {
+                p.update(10, 90, pistonY + 8, 86, 1);
+                p.draw(isobaricCtx);
+            });
+        }
+
+        // --- 4. ISOCHORIC SIMULATION (V = Const, Lock active, Fast Red Particles) ---
+        const isochoricCanvas = document.getElementById('isochoricCanvas');
+        const isochoricCtx = isochoricCanvas.getContext('2d');
+        const isochoricParticles = [];
+        for(let i=0; i<16; i++) {
+            isochoricParticles.push(new Particle(rand(10, 90), rand(30, 80), 3.5, '#f43f5e', 2.2));
+        }
+
+        function renderIsochoric() {
+            isochoricCtx.clearRect(0, 0, isochoricCanvas.width, isochoricCanvas.height);
+
+            // Cylinder
+            isochoricCtx.strokeStyle = '#475569';
+            isochoricCtx.strokeRect(5, 10, 90, 80);
+            
+            // Fixed Locked Piston head
+            const pistonY = 25;
+            isochoricCtx.fillStyle = '#ef4444'; // Red locked indicator
+            isochoricCtx.fillRect(6, pistonY, 88, 8);
+
+            // Lock symbol
+            isochoricCtx.fillStyle = '#ffffff';
+            isochoricCtx.font = 'bold 9px sans-serif';
+            isochoricCtx.fillText('🔒 LOCK', 32, pistonY - 3);
+
+            // Particles moving FAST
+            isochoricParticles.forEach(p => {
+                p.update(10, 90, pistonY + 10, 86, 1.2);
+                p.draw(isochoricCtx);
+            });
+        }
+
+        // --- 5. ADIABATIC SIMULATION (Q = 0, Color changes Red -> Blue on expansion) ---
+        const adiabaticCanvas = document.getElementById('adiabaticCanvas');
+        const adiabaticCtx = adiabaticCanvas.getContext('2d');
+        const adiabaticParticles = [];
+        for(let i=0; i<15; i++) {
+            adiabaticParticles.push(new Particle(rand(10, 90), rand(40, 80), 3.5, '#f43f5e', 1.5));
+        }
+        let adiabaticTime = 0;
+
+        function renderAdiabatic() {
+            adiabaticCtx.clearRect(0, 0, adiabaticCanvas.width, adiabaticCanvas.height);
+            adiabaticTime += 0.03;
+            
+            // Fast cycle expansion
+            const expansionProgress = (Math.sin(adiabaticTime) + 1) / 2; // 0 to 1
+            const pistonY = 20 + expansionProgress * 30; // 20 to 50
+
+            // Cylinder with THICK Insulated Walls
+            adiabaticCtx.lineWidth = 4;
+            adiabaticCtx.strokeStyle = '#a855f7'; // Purple insulator
+            adiabaticCtx.strokeRect(5, 10, 90, 80);
+            adiabaticCtx.lineWidth = 1;
+
+            // Piston head
+            adiabaticCtx.fillStyle = '#cbd5e1';
+            adiabaticCtx.fillRect(8, pistonY, 84, 6);
+
+            // Color transition from Red (hot compressed) to Blue (cool expanded)
+            const r = Math.floor(244 - expansionProgress * 180);
+            const g = Math.floor(63 + expansionProgress * 100);
+            const b = Math.floor(94 + expansionProgress * 150);
+            const dynamicColor = `rgb(${r},${g},${b})`;
+
+            // Particles speed scales with temperature
+            const currentSpeed = 1.8 - expansionProgress * 1.1;
+
+            adiabaticParticles.forEach(p => {
+                p.color = dynamicColor;
+                p.update(12, 88, pistonY + 8, 84, currentSpeed);
+                p.draw(adiabaticCtx);
+            });
+        }
+
+        // Main Animation Loop
+        function animate() {
+            if (isAnimating) {
+                renderMainPiston();
+                renderIsothermal();
+                renderIsobaric();
+                renderIsochoric();
+                renderAdiabatic();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Toggle Animation State
+        function toggleAnimations() {
+            isAnimating = !isAnimating;
+            const btnText = document.getElementById('animBtnText');
+            if (isAnimating) {
+                btnText.textContent = "Jeda Animasi Partikel";
+            } else {
+                btnText.textContent = "Putar Animasi Partikel";
+            }
+        }
+
+        // Start animation after window loads
+        window.onload = function() {
+            animate();
+        };
+    </script>
+</body>
+</html>
